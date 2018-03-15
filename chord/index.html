@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+body {
+  font: 10px sans-serif;
+}
+
+svg text{
+  fill:grey;
+  font-size:11px;
+}
+svg .values text{
+  pointer-events:none;
+  stroke-width: 0.5px;
+}
+.groups:hover{
+  cursor:pointer;
+  font-weight:bold;
+}
+</style>
+<body>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="http://vizjs.org/viz.v1.1.0.min.js"></script>
+<script>
+
+//from http://bl.ocks.org/NPashaP/ba4c802d5ef68f70c019a9706f77ebf1
+
+// var raw = [{ person: [	11, 12, 13	], area: [	2, 7	]},
+// { person: [	14	], area: [	6	]},
+// { person: [	4, 5, 6, 7	], area: [	2, 7	]},
+// { person: [	11, 12	], area: [	2, 7	]},
+// { person: [	11, 12, 13	], area: [	2, 7	]},
+// { person: [	14	], area: [	2, 7	]},
+// { person: [	7, 15	], area: [	4, 5, 7, 8, 9	]},
+// { person: [	2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14	], area: [	1, 2, 3, 4, 5, 6, 7, 8, 9	]},
+// { person: [	3, 4, 5, 6, 7, 10, 11, 13	], area: [	2, 7	]},
+// { person: [	8, 9	], area: [	7	]},
+// { person: [	2, 3, 16	], area: [	7	]},
+// { person: [	7, 8, 9	], area: [	2, 3, 4, 7	]},
+// { person: [	7, 8, 9, 10, 11	], area: [	2, 3, 6, 7	]},
+// { person: [	4, 5, 6, 7	], area: [	6, 7	]},
+// { person: [	14	], area: [	6	]},
+// { person: [	16	], area: [	7	]},
+// { person: [	3, 4, 5, 6, 7, 10	], area: [	2	]},
+// { person: [	7, 10	], area: [	2, 6	]},
+// { person: [	17	], area: [	7	]},
+// { person: [	4, 5, 6, 11, 12	], area: [	7	]},
+// { person: [	4, 5, 6, 11, 16	], area: [	4, 7	]},
+// { person: [	10	], area: [	7	]},
+// { person: [	11, 12, 13, 15, 16	], area: [	7	]},
+// { person: [	3, 4, 5, 6, 7	], area: [	2, 6	]},
+// { person: [	2, 3, 4, 5, 6, 7, 8, 9, 10	], area: [	6, 7	]},
+// { person: [	6, 7, 8, 9, 14	], area: [	2, 3, 7	]},
+// { person: [	5, 10	], area: [	2, 7	]},
+// { person: [		], area: [	7, 8, 9, 10	]},
+// { person: [	6,7	], area: [	2, 6	]},
+// { person: [	11, 13	], area: [	2, 7	]},
+// { person: [	4, 5, 6, 7, 11, 16	], area: [	2, 6	]},
+// { person: [	11, 13	], area: [	2, 7	]},
+// { person: [	4, 5, 6, 7	], area: [	2, 7	]},
+// { person: [	4, 5, 6, 7, 10	], area: [	2, 4, 6	]},
+// { person: [		], area: [		]},
+// { person: [	4, 5, 6, 7, 11, 18	], area: [	2, 4, 7	]},
+// { person: [	13, 18	], area: [		]},
+// { person: [	4, 5, 6, 7, 8, 9, 10, 11	], area: [	2, 4, 7	]},
+// { person: [	14	], area: [	1, 6	]},
+// { person: [	14	], area: [	1, 2, 6	]},
+// { person: [	11, 14, 16 	], area: [	2	]},
+// { person: [	11, 13	], area: [	2, 6	]},
+// { person: [	11, 16, 18	], area: [	2, 7	]},
+// { person: [	18	], area: [	5, 7	]},
+// { person: [	11, 12, 16	], area: [	1, 2, 6	]},
+// { person: [	11, 14, 16	], area: [	1, 2, 7	]},
+// { person: [	10,11	], area: [	4, 7	]},
+// { person: [	18	], area: [	2, 5, 6	]},
+// { person: [	18	], area: [	2, 6	]},
+// { person: [	14, 16	], area: [	2, 5, 6	]}];
+// var persons = [
+//   "แม่ตั้งครรภ์	",
+//   "เด็กปฐมวัย (0-2 ปี)	",
+//   "นักเรียนอนุบาล 1-3 (3-5 ปี)	",
+//   "นักเรียนประถมศึกษาตอนต้น 1-3 (6-8 ปี)	",
+//   "นักเรียนประถมศึกษาตอนปลาย 4-6 (9-11 ปี)	",
+//   "นักเรียนมัธยมศึกษาตอนต้น 1-3 (12-14 ปี)	",
+//   "นักเรียนมัธยมศึกษาตอนปลาย 4-6 (15-17 ปี)	",
+//   "อาชีวะศึกษา (ปวช.)	",
+//   "อาชีวะศึกษา (ปวส.)	",
+//   "นักศึกษา/นิสิตปริญญาตรี 	",
+//   "คุณครู/อาจารย์	",
+//   "ผู้บริหารการศึกษา	",
+//   "ผู้ที่เกี่ยวข้องกับการศึกษา	",
+//   "เด็กด้อยโอกาส เร่ร่อน ยากจน ต่างด้าว	",
+//   "ผู้เที่เกี่ยวข้องกับการพัฒนาเด็กและเยาวชน	",
+//   "พ่อแม่/ผู้ปกครอง / ผู้นำชุมชน	",
+//   "เด็กที่ถูกทารุณกรรม	",
+//   "เด็กและเยาวชน	"
+// ];
+// var areas = [
+//   "ศูนย์เด็กเล็ก/ปฐมวัย	",
+//   "โรงเรียน	",
+//   "อาชีวะ	",
+//   "สถาบันการศึกษา	",
+//   "ชุมชนท้องถิ่น (ตำบล)	",
+//   "จังหวัด	",
+//   "ทั่วประเทศ	",
+//   "หน่วยงานภาครัฐ	",
+//   "องค์กรภาคเอกชน	",
+//   "ต่างประเทศ	"
+// ];
+
+d3.json("all.json", function(error, data) {
+  if (error) return console.warn(error);
+
+  var raw = data.orgs;
+  var persons = data.people;
+  var areas = data.areas;
+
+  //data transformation
+  var counts = {};
+  var data = [];
+  for (var i = 0; i < raw.length; i++) {
+    var pair = raw[i];
+    for(var x = 0; x < pair.person.length; x++) {
+      for(var y = 0; y < pair.area.length; y++) {
+        var countString = pair.person[x] + "x" + pair.area[y];
+        if (counts[countString]) {
+          counts[countString]++;
+        } else {
+          counts[countString] = 1;
+        }
+      }
+    }
+  }
+  for (var countString in counts) {
+    var pair = countString.split("x");
+    console.log(pair[0]);
+    console.log(persons[+pair[0]-1]);
+    console.log(countString);
+    // console.log(pair[1]);
+    // console.log(areas[+pair[1]-1]);
+    if (+pair[0] <= persons.length && +pair[1] <= areas.length) {
+      data.push([persons[+pair[0]-1].name, areas[+pair[1]-1].name, counts[countString]]);
+      data.push([areas[+pair[1]-1].name, persons[+pair[0]-1].name, counts[countString]]);
+    }
+  }
+
+  function sort(a,b){ return d3.ascending(a, b); }
+
+  var ch = viz.ch().data(data)
+      .padding(.01)
+      .sort(sort)
+    .innerRadius(300)
+    .outerRadius(320)
+    .duration(1000)
+    .chordOpacity(0.3)
+    .labelPadding(.03)
+      .fill(function(d) {
+        var index = persons.indexOf(d);
+        return d3.schemeCategory20[(index >= 0)? (index%19) : 19];
+      });
+      // .fill(function(d){ return d3.schemeCategory10[(persons.indexOf(d) > 0)? 0:1]; });
+
+  var width = 1200;
+  var height = 1100;
+
+  var svg = d3.select("body").append("svg")
+    .attr("height",height)
+    .attr("width",width);
+
+  svg.append("g")
+    .attr("transform", "translate(600,550)")
+    .call(ch);
+
+  // adjust height of frame in bl.ocks.org
+  d3.select(self.frameElement)
+    .style("height", height+"px")
+    .style("width", width+"px");
+});
+
+</script>

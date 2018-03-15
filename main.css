@@ -1,0 +1,39 @@
+body {
+  font: 10px sans-serif;
+}
+
+.group-tick line {
+  stroke: #000;
+}
+
+.ribbons {
+  fill-opacity: 0.67;
+}
+
+/* body {
+  margin: 0;
+  font-family: 'Athiti', sans-serif;
+  font-size: 14px;
+  line-height: 14px;
+}
+
+div.tooltip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 200px;
+  height: 100%;
+  padding: 10px;
+  background: whitesmoke;
+  border: 0px;
+}
+div.tooltip table {
+  width: 100%;
+  table-layout: fixed;
+  overflow-x: hidden;
+  overflow-y: auto;
+  text-overflow: ellipsis;
+}
+div.tooltip td {
+  padding-top: 0.5em;
+} */
