@@ -2,7 +2,7 @@ d3.json("all.json", function(error, data) {
   if (error) return console.warn(error);
 
   data.orgs.sort(function(a, b) { return a.type - b.type; });
-  console.log(data);
+  // console.log(data);
 
   var innerAttrs = ["area", "person", "relation", "result", "role", "strategy"];
   var outerAttrs = ["areas", "people", "relations", "results", "roles", "strategies"];
@@ -46,7 +46,7 @@ d3.json("all.json", function(error, data) {
       index: i,
       startAngle:   i*Math.PI*2/data.orgs.length,
       endAngle: (i+1)*Math.PI*2/data.orgs.length,
-      value: d.type - 1
+      value: d
     });
   });
   var outerLengthSoFar = 0;
@@ -56,15 +56,15 @@ d3.json("all.json", function(error, data) {
       index: i,
       startAngle:                  outerLengthSoFar*Math.PI*2/outerDataLength,
       endAngle: (outerLengthSoFar + data[d].length)*Math.PI*2/outerDataLength,
-      value: data[d].length
+      value: d
     });
     outerLengthSoFar += data[d].length;
   });
 
-  console.log(chord1);
-  console.log(chord1.groups);
-  console.log(chord2);
-  console.log(chord2.groups);
+  // console.log(chord1);
+  // console.log(chord1.groups);
+  // console.log(chord2);
+  // console.log(chord2.groups);
 
   var svg = d3.select("svg");
   var width = +svg.attr("width");
@@ -99,9 +99,6 @@ d3.json("all.json", function(error, data) {
       .innerRadius(outerRadius - 10)
       .outerRadius(outerRadius);
 
-  var ribbon = d3.ribbon();
-      // .radius(outerRadius - 10);
-
   var color = d3.scaleOrdinal(d3.schemeSet3);
   // var color = d3.scaleOrdinal()
   //     .domain(d3.range(4))
@@ -112,7 +109,7 @@ d3.json("all.json", function(error, data) {
       .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
       .datum(chord1);
 
-  g.append("g")
+  var ribbons = g.append("g")
       .attr("class", "ribbons")
     .selectAll("path")
     // .data(function(chords) { return chords; })
@@ -125,7 +122,7 @@ d3.json("all.json", function(error, data) {
     })
     .enter().append("path")
       .attr("d", function(d) {
-        var parts = ribbon(d).split(/(?=[MmZzLlHhVvCcSsQqTtAa])/);
+        var parts = d3.ribbon()(d).split(/(?=[MmZzLlHhVvCcSsQqTtAa])/);
         if (parts.length > 4) {
           var subparts;
           var indices = [];
@@ -191,9 +188,17 @@ d3.json("all.json", function(error, data) {
         return parts.join("");
       })
       // .style("fill", function(d) { return color(d.target.value + data.types.length); })
-      .style("fill", function(d) { return d3.rgb(200, 200, 200, 0.5); })
+      // .style("fill", function(d) { return d3.rgb(200, 200, 200, 0.5); })
       // .style("fill", function(d) { return color(d.target.index); })
       // .style("stroke", function(d) { return d3.rgb(color(d.target.index)).darker(); });
+
+  // tooltip
+  var tip = d3.tip()
+    .attr("class", "d3-tip")
+    .html(function(d) {
+      return d;
+    });
+  svg.call(tip);
 
   // group 1
   // var g = svg.append("g")
@@ -207,9 +212,19 @@ d3.json("all.json", function(error, data) {
       .enter().append("g");
 
   group.append("path")
-      .style("fill", function(d) { return color(d.value); })
-      .style("stroke", function(d) { return d3.rgb(color(d.value)).darker(); })
-      .attr("d", arc);
+    .style("fill", function(d) { return color(d.value.type - 1); })
+    .style("stroke", function(d) { return d3.rgb(color(d.value.type - 1)).darker(); })
+    .attr("d", arc)
+    .on("mouseover", function(d) {
+      ribbons.classed("highlight", function(path) {
+        return path.source.index == d.index;
+      });
+      tip.show(d.value.thai_name);
+    })
+    .on("mouseout", function(d) {
+      ribbons.classed("highlight", false);
+      tip.hide(d);
+    });
 
   // group 2
   var g2 = svg.append("g")
@@ -223,9 +238,30 @@ d3.json("all.json", function(error, data) {
       .enter().append("g");
 
   group2.append("path")
-      .style("fill", function(d) { return color(d.index + data.types.length + 1); })
-      .style("stroke", function(d) { return d3.rgb(color(d.index + data.types.length + 1)).darker(); })
-      .attr("d", arc2);
+    .style("fill", function(d) { return color(d.index + data.types.length + 1); })
+    .style("stroke", function(d) { return d3.rgb(color(d.index + data.types.length + 1)).darker(); })
+    .attr("d", arc2)
+    .on("mouseover", function(d) {
+      if (d.value == "relations") {
+        tip.direction("e");
+      } else {
+        tip.direction("n");
+      }
+      var text;
+      switch(d.value) {
+        case "areas": text = "ระดับพื้นที่ปฏิบัติการ"; break;
+        case "people": text = "กลุ่มเป้าหมาย บุคคล"; break;
+        case "relations": text = "ภาคีที่เกี่ยวข้อง"; break;
+        case "results": text = "ผลลัพธ์"; break;
+        case "roles": text = "บทบาท"; break;
+        case "strategies": text = "กลยุทธ์ เครื่องมือ กระบวนการ"; break;
+      }
+      tip.show(text);
+    })
+    .on("mouseout", function(d) {
+      tip.direction("n");
+      tip.hide(d);
+    });
 
   // var groupTick = group.selectAll(".group-tick")
   //   .data(function(d) { return groupTicks(d, 1e3); })
@@ -276,10 +312,10 @@ function tangentVector(coord, orientation, size) { //vector tangent to cirlces a
   return newCoord;
 }
 
-// Returns an array of tick angles and values for a given group and step.
-function groupTicks(d, step) {
-  var k = (d.endAngle - d.startAngle) / d.value;
-  return d3.range(0, d.value, step).map(function(value) {
-    return {value: value, angle: value * k + d.startAngle};
-  });
-}
+// // Returns an array of tick angles and values for a given group and step.
+// function groupTicks(d, step) {
+//   var k = (d.endAngle - d.startAngle) / d.value;
+//   return d3.range(0, d.value, step).map(function(value) {
+//     return {value: value, angle: value * k + d.startAngle};
+//   });
+// }

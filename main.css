@@ -2,22 +2,29 @@ body {
   font: 10px sans-serif;
 }
 
-.group-tick line {
+/* .group-tick line {
   stroke: #000;
-}
+} */
 
 .ribbons {
-  fill-opacity: 0.67;
+  fill: #ccc;
+  fill-opacity: 0.1;
+}
+.ribbons path.faded {
+  fill-opacity: 0.1;
+}
+.ribbons path.highlight {
+  fill: #333;
+  fill-opacity: 0.8;
 }
 
-/* body {
-  margin: 0;
+body {
   font-family: 'Athiti', sans-serif;
-  font-size: 14px;
-  line-height: 14px;
+  font-size: 10px;
+  line-height: 10px;
 }
 
-div.tooltip {
+/* div.tooltip {
   position: absolute;
   top: 0;
   right: 0;
