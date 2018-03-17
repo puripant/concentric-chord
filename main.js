@@ -1,99 +1,116 @@
 d3.json("all.json", function(error, data) {
   if (error) return console.warn(error);
 
-  // console.log(data);
+  data.orgs.sort(function(a, b) { return a.type - b.type; });
+  console.log(data);
 
-  var matrix = [
-    [11975,  5871, 8916, 2868],
-    [ 1951, 10048, 2060, 6171],
-    [ 8010, 16145, 8090, 8045],
-    [ 1013,   990,  940, 6907]
-  ];
-  var matrix2 = [
-    [11975,  5871, 8916, 2868],
-    [ 1951, 10048, 2060, 6171],
-    [ 8010, 16145, 8090, 8045],
-    [ 1013,   990,  940, 6907]
-  ];
+  var innerAttrs = ["area", "person", "relation", "result", "role", "strategy"];
+  var outerAttrs = ["areas", "people", "relations", "results", "roles", "strategies"];
+  var outerLengths = outerAttrs.map(function(d) { return data[d].length; });
+  var outerStartIdx = [];
+  outerLengths.reduce(function(a, b, i) { return outerStartIdx[i] = a + b; }, 0);
+  outerStartIdx.unshift(0);
+  var outerDataLength = outerStartIdx[outerAttrs.length];
+
+  var chord1 = [];
+  data.orgs.forEach(function(d, i) {
+    innerAttrs.forEach(function(dd ,ii) {
+      d[dd].forEach(function(e) {
+        var j = outerStartIdx[ii] + data[outerAttrs[ii]].findIndex(function(f) { return f.id == e; });
+        if (j >= outerStartIdx[ii] && j < outerStartIdx[ii+1]) {
+          chord1.push({
+            source: {
+              index: i,
+              subindex: j,
+              startAngle:   i*Math.PI*2/data.orgs.length,
+              endAngle: (i+1)*Math.PI*2/data.orgs.length,
+              value: 1
+            },
+            target: {
+              index: j,
+              subindex: i,
+              startAngle:   j*Math.PI*2/outerDataLength,
+              endAngle: (j+1)*Math.PI*2/outerDataLength,
+              value: ii
+            }
+          });
+        }
+      });
+    });
+  });
+  var chord2 = JSON.parse(JSON.stringify(chord1)); //deep clone
+
+  chord1.groups = [];
+  data.orgs.forEach(function(d, i) {
+    chord1.groups.push({
+      index: i,
+      startAngle:   i*Math.PI*2/data.orgs.length,
+      endAngle: (i+1)*Math.PI*2/data.orgs.length,
+      value: d.type - 1
+    });
+  });
+  var outerLengthSoFar = 0;
+  chord2.groups = [];
+  outerAttrs.forEach(function(d, i) {
+    chord2.groups.push({
+      index: i,
+      startAngle:                  outerLengthSoFar*Math.PI*2/outerDataLength,
+      endAngle: (outerLengthSoFar + data[d].length)*Math.PI*2/outerDataLength,
+      value: data[d].length
+    });
+    outerLengthSoFar += data[d].length;
+  });
+
+  console.log(chord1);
+  console.log(chord1.groups);
+  console.log(chord2);
+  console.log(chord2.groups);
 
   var svg = d3.select("svg");
   var width = +svg.attr("width");
   var height = +svg.attr("height");
   var outerRadius = Math.min(width, height) * 0.5 - 40;
-  var tangentSize = 50;
+  var tangentSize = 0;
 
   var formatValue = d3.formatPrefix(",.0", 1e3);
 
-  var chord = d3.chord()
-      .padAngle(0.05)
-      .sortSubgroups(d3.descending);
+  // var chord = d3.chord()
+  //     .padAngle(0.05)
+  //     .sortSubgroups(d3.descending);
+  // var matrix = [
+  //   [0, 1, 1, 1],
+  //   [2, 0, 2, 2],
+  //   [3, 3, 0, 3],
+  //   [4, 4, 4, 0]
+  // ];
+  // var matrix2 = [
+  //   [0, 1, 1, 1],
+  //   [2, 0, 2, 2],
+  //   [3, 3, 0, 3],
+  //   [4, 4, 4, 0]
+  // ];
   // console.log(chord(matrix));
   // console.log(chord(matrix).groups);
 
   var arc = d3.arc()
-      .innerRadius(outerRadius - 10)
-      .outerRadius(outerRadius);
-  var arc2 = d3.arc()
       .innerRadius(outerRadius/2 - 10)
       .outerRadius(outerRadius/2);
+  var arc2 = d3.arc()
+      .innerRadius(outerRadius - 10)
+      .outerRadius(outerRadius);
 
   var ribbon = d3.ribbon();
       // .radius(outerRadius - 10);
 
-  var color = d3.scaleOrdinal()
-      .domain(d3.range(4))
-      .range(["#000000", "#FFDD89", "#957244", "#F26223"]);
+  var color = d3.scaleOrdinal(d3.schemeSet3);
+  // var color = d3.scaleOrdinal()
+  //     .domain(d3.range(4))
+  //     .range(["#000000", "#FFDD89", "#957244", "#F26223"]);
 
   // group 1
   var g = svg.append("g")
       .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
-      .datum(chord(matrix));
-
-  var group = g.append("g")
-      .attr("class", "groups")
-    .selectAll("g")
-    .data(function(chords) { return chords.groups; })
-    .enter().append("g");
-
-  group.append("path")
-      .style("fill", function(d) { return color(d.index); })
-      .style("stroke", function(d) { return d3.rgb(color(d.index)).darker(); })
-      .attr("d", arc);
-
-  // group 2
-  var g = svg.append("g")
-      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
-      .datum(chord(matrix2));
-
-  var group2 = g.append("g")
-      .attr("class", "groups")
-    .selectAll("g")
-    .data(function(chords) { return chords.groups; })
-    .enter().append("g");
-
-  group.append("path")
-      .style("fill", function(d) { return color(d.index); })
-      .style("stroke", function(d) { return d3.rgb(color(d.index)).darker(); })
-      .attr("d", arc2);
-
-
-  var groupTick = group.selectAll(".group-tick")
-    .data(function(d) { return groupTicks(d, 1e3); })
-    .enter().append("g")
-      .attr("class", "group-tick")
-      .attr("transform", function(d) { return "rotate(" + (d.angle * 180 / Math.PI - 90) + ") translate(" + outerRadius + ",0)"; });
-
-  groupTick.append("line")
-      .attr("x2", 6);
-
-  groupTick
-    .filter(function(d) { return d.value % 5e3 === 0; })
-    .append("text")
-      .attr("x", 8)
-      .attr("dy", ".35em")
-      .attr("transform", function(d) { return d.angle > Math.PI ? "rotate(180) translate(-16)" : null; })
-      .style("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; })
-      .text(function(d) { return formatValue(d.value); });
+      .datum(chord1);
 
   g.append("g")
       .attr("class", "ribbons")
@@ -101,8 +118,8 @@ d3.json("all.json", function(error, data) {
     // .data(function(chords) { return chords; })
     .data(function(chords) {
       return chords.map(function(d) {
-        d.source.radius = outerRadius - 10;
-        d.target.radius = outerRadius/2;
+        d.source.radius = outerRadius/2;
+        d.target.radius = outerRadius - 10;
         return d;
       });
     })
@@ -129,13 +146,13 @@ d3.json("all.json", function(error, data) {
                   x: +subparts[subparts.length-2],
                   y: +subparts[subparts.length-1]
                 });
-                console.log(subparts);
+                // console.log(subparts);
               }
             }
           }
           coords.unshift(coords[coords.length-1])
           coords.splice(-1, 1);
-          console.log(coords);
+          // console.log(coords);
 
           var newAStringParts = parts[indices[1]].split(",");
           newAStringParts[newAStringParts.length-3] = 0;
@@ -169,21 +186,65 @@ d3.json("all.json", function(error, data) {
             // "T"+x2+","+y2);
             // "C"+(x1*(0.7+j*0.6))+","+(y1*(0.7+j*0.6))+","+((x1+x2)/2)+","+((y1+y2)/2),
             // "S"+x2+","+y2);
-          console.log(parts);
+          // console.log(parts);
         }
         return parts.join("");
       })
-      .style("fill", function(d) { return color(d.target.index); })
-      .style("stroke", function(d) { return d3.rgb(color(d.target.index)).darker(); });
-});
-//M0,-95  A95,95,0,0,1,63.243623347934175,-70.88895616261136 Q0,0,0,-95 Z
+      // .style("fill", function(d) { return color(d.target.value + data.types.length); })
+      .style("fill", function(d) { return d3.rgb(200, 200, 200, 0.5); })
+      // .style("fill", function(d) { return color(d.target.index); })
+      // .style("stroke", function(d) { return d3.rgb(color(d.target.index)).darker(); });
 
-//M-198.89740494187757,20.97194095420775
-//A200,200,0,0,1,-185.4092626397834,-74.98936809556281
-//Q0,0,-10.162800046997845,-94.45484368313114
-//A95,95,0,0,1,-4.748021080714611,-94.88127473752179
-//Q0,0,-198.89740494187757,20.97194095420775
-//Z
+  // group 1
+  // var g = svg.append("g")
+  //     .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
+  //     .datum(chord1);
+
+  var group = g.append("g")
+      .attr("class", "groups")
+    .selectAll("g")
+      .data(function(chords) { return chords.groups; })
+      .enter().append("g");
+
+  group.append("path")
+      .style("fill", function(d) { return color(d.value); })
+      .style("stroke", function(d) { return d3.rgb(color(d.value)).darker(); })
+      .attr("d", arc);
+
+  // group 2
+  var g2 = svg.append("g")
+      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
+      .datum(chord2);
+
+  var group2 = g2.append("g")
+      .attr("class", "groups")
+    .selectAll("g")
+      .data(function(chords) { return chords.groups; })
+      .enter().append("g");
+
+  group2.append("path")
+      .style("fill", function(d) { return color(d.index + data.types.length + 1); })
+      .style("stroke", function(d) { return d3.rgb(color(d.index + data.types.length + 1)).darker(); })
+      .attr("d", arc2);
+
+  // var groupTick = group.selectAll(".group-tick")
+  //   .data(function(d) { return groupTicks(d, 1e3); })
+  //   .enter().append("g")
+  //     .attr("class", "group-tick")
+  //     .attr("transform", function(d) { return "rotate(" + (d.angle * 180 / Math.PI - 90) + ") translate(" + outerRadius + ",0)"; });
+  //
+  // groupTick.append("line")
+  //     .attr("x2", 6);
+  //
+  // groupTick
+  //   .filter(function(d) { return d.value % 5e3 === 0; })
+  //   .append("text")
+  //     .attr("x", 8)
+  //     .attr("dy", ".35em")
+  //     .attr("transform", function(d) { return d.angle > Math.PI ? "rotate(180) translate(-16)" : null; })
+  //     .style("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; })
+  //     .text(function(d) { return formatValue(d.value); });
+});
 
 // Vector Math
 function radialVector(coord, orientation, size) { //vector to or from the origin (0, 0)
