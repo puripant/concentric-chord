@@ -193,12 +193,28 @@ d3.json("all.json", function(error, data) {
       // .style("stroke", function(d) { return d3.rgb(color(d.target.index)).darker(); });
 
   // tooltip
+  var tip_fixed = false;
   var tip = d3.tip()
     .attr("class", "d3-tip")
     .html(function(d) {
       return d;
     });
   svg.call(tip);
+
+  var mouseout = function(d) {
+    if (!tip_fixed) {
+      ribbons.classed("highlight", false);
+      tip.hide(d);
+    }
+  }
+  svg.on("click", function(d) {
+    tip_fixed = !tip_fixed;
+    mouseout(d);
+  });
+  svg.select("d3-tip").on("click", function(d) {
+    tip_fixed = !tip_fixed;
+    mouseout(d);
+  });
 
   // group 1
   // var g = svg.append("g")
@@ -216,15 +232,14 @@ d3.json("all.json", function(error, data) {
     .style("stroke", function(d) { return d3.rgb(color(d.value.type - 1)).darker(); })
     .attr("d", arc)
     .on("mouseover", function(d) {
-      ribbons.classed("highlight", function(path) {
-        return path.source.index == d.index;
-      });
-      tip.show(d.value.thai_name);
+      if (!tip_fixed) {
+        ribbons.classed("highlight", function(path) {
+          return path.source.index == d.index;
+        });
+        tip.show(d.value.thai_name);
+      }
     })
-    .on("mouseout", function(d) {
-      ribbons.classed("highlight", false);
-      tip.hide(d);
-    });
+    .on("mouseout", mouseout);
 
   // group 2
   var g2 = svg.append("g")
@@ -242,25 +257,29 @@ d3.json("all.json", function(error, data) {
     .style("stroke", function(d) { return d3.rgb(color(d.index + data.types.length + 1)).darker(); })
     .attr("d", arc2)
     .on("mouseover", function(d) {
-      if (d.value == "relations") {
-        tip.direction("e");
-      } else {
-        tip.direction("n");
+      if (!tip_fixed) {
+        if (d.value == "relations") {
+          tip.direction("e");
+        } else {
+          tip.direction("n");
+        }
+        var text;
+        switch(d.value) {
+          case "areas": text = "ระดับพื้นที่ปฏิบัติการ"; break;
+          case "people": text = "กลุ่มเป้าหมาย บุคคล"; break;
+          case "relations": text = "ภาคีที่เกี่ยวข้อง"; break;
+          case "results": text = "ผลลัพธ์"; break;
+          case "roles": text = "บทบาท"; break;
+          case "strategies": text = "กลยุทธ์ เครื่องมือ กระบวนการ"; break;
+        }
+        tip.show(text);
       }
-      var text;
-      switch(d.value) {
-        case "areas": text = "ระดับพื้นที่ปฏิบัติการ"; break;
-        case "people": text = "กลุ่มเป้าหมาย บุคคล"; break;
-        case "relations": text = "ภาคีที่เกี่ยวข้อง"; break;
-        case "results": text = "ผลลัพธ์"; break;
-        case "roles": text = "บทบาท"; break;
-        case "strategies": text = "กลยุทธ์ เครื่องมือ กระบวนการ"; break;
-      }
-      tip.show(text);
     })
     .on("mouseout", function(d) {
-      tip.direction("n");
-      tip.hide(d);
+      if (!tip_fixed) {
+        tip.direction("n");
+        tip.hide(d);
+      }
     });
 
   // var groupTick = group.selectAll(".group-tick")
