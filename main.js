@@ -49,16 +49,20 @@ d3.json("all.json", function(error, data) {
       value: d
     });
   });
-  var outerLengthSoFar = 0;
   chord2.groups = [];
-  outerAttrs.forEach(function(d, i) {
-    chord2.groups.push({
-      index: i,
-      startAngle:                  outerLengthSoFar*Math.PI*2/outerDataLength,
-      endAngle: (outerLengthSoFar + data[d].length)*Math.PI*2/outerDataLength,
-      value: d
+  var idx = 0;
+  outerAttrs.forEach(function(attr, attrIdx) {
+    data[attr].forEach(function(d, i) {
+      d.type = attr;
+      d.typeIdx = attrIdx;
+      chord2.groups.push({
+        index: idx,
+        startAngle:   idx*Math.PI*2/outerDataLength,
+        endAngle: (idx+1)*Math.PI*2/outerDataLength,
+        value: d
+      });
+      idx++;
     });
-    outerLengthSoFar += data[d].length;
   });
 
   // console.log(chord1);
@@ -253,52 +257,18 @@ d3.json("all.json", function(error, data) {
       .enter().append("g");
 
   group2.append("path")
-    .style("fill", function(d) { return color(d.index + data.types.length + 1); })
-    .style("stroke", function(d) { return d3.rgb(color(d.index + data.types.length + 1)).darker(); })
+    .style("fill", function(d) { return color(d.value.typeIdx + data.types.length + 1); })
+    .style("stroke", function(d) { return d3.rgb(color(d.value.typeIdx + data.types.length + 1)).darker(); })
     .attr("d", arc2)
     .on("mouseover", function(d) {
       if (!tip_fixed) {
-        if (d.value == "relations") {
-          tip.direction("e");
-        } else {
-          tip.direction("n");
-        }
-        var text;
-        switch(d.value) {
-          case "areas": text = "ระดับพื้นที่ปฏิบัติการ"; break;
-          case "people": text = "กลุ่มเป้าหมาย บุคคล"; break;
-          case "relations": text = "ภาคีที่เกี่ยวข้อง"; break;
-          case "results": text = "ผลลัพธ์"; break;
-          case "roles": text = "บทบาท"; break;
-          case "strategies": text = "กลยุทธ์ เครื่องมือ กระบวนการ"; break;
-        }
-        tip.show(text);
+        ribbons.classed("highlight", function(path) {
+          return path.target.index == d.index;
+        });
+        tip.show(d.value.name);
       }
     })
-    .on("mouseout", function(d) {
-      if (!tip_fixed) {
-        tip.direction("n");
-        tip.hide(d);
-      }
-    });
-
-  // var groupTick = group.selectAll(".group-tick")
-  //   .data(function(d) { return groupTicks(d, 1e3); })
-  //   .enter().append("g")
-  //     .attr("class", "group-tick")
-  //     .attr("transform", function(d) { return "rotate(" + (d.angle * 180 / Math.PI - 90) + ") translate(" + outerRadius + ",0)"; });
-  //
-  // groupTick.append("line")
-  //     .attr("x2", 6);
-  //
-  // groupTick
-  //   .filter(function(d) { return d.value % 5e3 === 0; })
-  //   .append("text")
-  //     .attr("x", 8)
-  //     .attr("dy", ".35em")
-  //     .attr("transform", function(d) { return d.angle > Math.PI ? "rotate(180) translate(-16)" : null; })
-  //     .style("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; })
-  //     .text(function(d) { return formatValue(d.value); });
+    .on("mouseout", mouseout);
 });
 
 // Vector Math
@@ -330,11 +300,3 @@ function tangentVector(coord, orientation, size) { //vector tangent to cirlces a
   newCoord.y += coord.y;
   return newCoord;
 }
-
-// // Returns an array of tick angles and values for a given group and step.
-// function groupTicks(d, step) {
-//   var k = (d.endAngle - d.startAngle) / d.value;
-//   return d3.range(0, d.value, step).map(function(value) {
-//     return {value: value, angle: value * k + d.startAngle};
-//   });
-// }
