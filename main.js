@@ -166,16 +166,13 @@ d3.json("all.json", function(error, data) {
         y: parts1[6]
       }
 
-      // var angle1 = (radianToOrigin(coords[0]) + radianToOrigin(coords[1]))/2;
-      // var angle2 = (radianToOrigin(coords[2]) + radianToOrigin(coords[3]))/2;
-      // var angleDiff = (angle1 - angle2) % (2*Math.PI); //negative for counterclockwise
-      // var tangentMid1 = tangentVector(mid1, (angleDiff > 0)? "counterclockwise":"", Math.min(tangentSize*angleDiff/2, tangentSize));
-      // var tangentMid2 = tangentVector(mid2, (angleDiff > 0)? "":"counterclockwise", Math.min(tangentSize*angleDiff/2, tangentSize));
-      var angle1 = radianToOrigin(coord1);
-      var angle0 = radianToOrigin(coord0);
-      var angleDiff = (angle1 - angle0) % (2*Math.PI); //positive for counterclockwise
-      var tangentMid1 = tangentVector(mid1, (angleDiff > 0)? "counterclockwise":"", Math.min(tangentSize*angleDiff/2, tangentSize));
-      var tangentMid2 = tangentVector(mid2, (angleDiff > 0)? "":"counterclockwise", Math.min(tangentSize*angleDiff/2, tangentSize));
+      var angle1 = (radianToOrigin(coords[0]) + radianToOrigin(coords[1]))/2;
+      var angle2 = (radianToOrigin(coords[2]) + radianToOrigin(coords[3]))/2;
+      var angleDiff = Math.abs((angle2 - angle1) % (2*Math.PI));
+
+      var tangentIn = (radianToOrigin(coord1) - radianToOrigin(coord0)) % (2*Math.PI); //positive for counterclockwise
+      var tangentMid1 = tangentVector(mid1, (tangentIn > 0)? "counterclockwise":"", Math.min(tangentSize*angleDiff/2, tangentSize));
+      var tangentMid2 = tangentVector(mid2, (tangentIn > 0)? "":"counterclockwise", Math.min(tangentSize*angleDiff/2, tangentSize));
 
       parts.splice(indices[0]+1, 3,
         `C${radialVectors[1].x},${radialVectors[1].y},${tangentMid1.x},${tangentMid1.y},${mid1.x},${mid1.y}`,
@@ -295,6 +292,12 @@ function nudgeToOrigin(coord, unit, direction) { //relative to origin (0, 0)
     x: coord.x*(1-ratio),
     y: coord.y*(1-ratio)
   };
+}
+function opposite(coord) {
+  return {
+    x: -coord.x,
+    y: -coord.y
+  }
 }
 function isClockwise(a, b) { //relative to origin (0, 0)
   return a.x*b.y + a.y*b.x < 0; //cross-product
