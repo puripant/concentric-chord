@@ -105,7 +105,10 @@ d3.json("all.json", function(error, data) {
     .enter().append("path")
       .attr("d", path)
       .style("fill", "#333")
-      .style("fill-opacity", 0);
+      .style("fill-opacity", 0)
+      .style("stroke", "#333")
+      .style("stroke-opacity", 0)
+      .style("stroke-width", 1);
 
   function path(d) {
     var parts = d3.ribbon()(d).split(/(?=[MmZzLlHhVvCcSsQqTtAa])/);
@@ -114,13 +117,6 @@ d3.json("all.json", function(error, data) {
       var indices = [];
       var coords = [];
       for (var i = 0; i < parts.length; i++) {
-        // example <path d="M141,141A200,200,0,0,0,200,0
-        // C150,0,150,0,100,-50
-        // S0,-150,0,-100
-        // A100,100,0,0,1,100,0
-        // C150,0,138,25,120,70
-        // S105,105,141,141
-        // Z" />
         if (parts[i].startsWith("A")) {
           indices.push(i);
           for (var j = 0; j < 2; j++) { //for A and Q pair
@@ -129,7 +125,6 @@ d3.json("all.json", function(error, data) {
               x: +subparts[subparts.length-2],
               y: +subparts[subparts.length-1]
             });
-            // console.log(subparts);
           }
         }
       }
@@ -145,12 +140,12 @@ d3.json("all.json", function(error, data) {
       var radialVectors = [
         radialVector(coords[0], "out", tangentSize),
         radialVector(coords[1], "out", tangentSize),
-        radialVector(coords[2], "in", tangentSize*2),
-        radialVector(coords[3], "in", tangentSize*2)
+        radialVector(coords[2], "in", tangentSize),
+        radialVector(coords[3], "in", tangentSize)
       ];
       var mid = radialAverage(coordAverage(coords[0], coords[1]), coordAverage(coords[2], coords[3]));
-      var mid1 = mid; //radialAverage(coords[1], coords[3]);
-      var mid2 = mid; //radialAverage(coords[0], coords[2]);
+      var mid1 = mid; //nudgeToOrigin(mid, 1, "out"); //radialAverage(coords[1], coords[3]);
+      var mid2 = mid; //nudgeToOrigin(mid, 1, "in"); //radialAverage(coords[0], coords[2]);
       // var mid1 = {
       //   x: (coords[1].x+coords[3].x)/2,
       //   y: (coords[1].y+coords[3].y)/2
@@ -160,9 +155,25 @@ d3.json("all.json", function(error, data) {
       //   y: (coords[0].y+coords[2].y)/2
       // }
 
-      var angle1 = (radianToOrigin(coords[0]) + radianToOrigin(coords[1]))/2;
-      var angle2 = (radianToOrigin(coords[2]) + radianToOrigin(coords[3]))/2;
-      var angleDiff = (angle1 - angle2) % (2*Math.PI); //negative for counterclockwise
+      var parts0 = parts[0].split(",");
+      var parts1 = parts[1].split(",");
+      var coord0 = {
+        x: parts0[0].slice(1),
+        y: parts0[1]
+      }
+      var coord1 = {
+        x: parts1[5],
+        y: parts1[6]
+      }
+
+      // var angle1 = (radianToOrigin(coords[0]) + radianToOrigin(coords[1]))/2;
+      // var angle2 = (radianToOrigin(coords[2]) + radianToOrigin(coords[3]))/2;
+      // var angleDiff = (angle1 - angle2) % (2*Math.PI); //negative for counterclockwise
+      // var tangentMid1 = tangentVector(mid1, (angleDiff > 0)? "counterclockwise":"", Math.min(tangentSize*angleDiff/2, tangentSize));
+      // var tangentMid2 = tangentVector(mid2, (angleDiff > 0)? "":"counterclockwise", Math.min(tangentSize*angleDiff/2, tangentSize));
+      var angle1 = radianToOrigin(coord1);
+      var angle0 = radianToOrigin(coord0);
+      var angleDiff = (angle1 - angle0) % (2*Math.PI); //positive for counterclockwise
       var tangentMid1 = tangentVector(mid1, (angleDiff > 0)? "counterclockwise":"", Math.min(tangentSize*angleDiff/2, tangentSize));
       var tangentMid2 = tangentVector(mid2, (angleDiff > 0)? "":"counterclockwise", Math.min(tangentSize*angleDiff/2, tangentSize));
 
@@ -176,8 +187,16 @@ d3.json("all.json", function(error, data) {
         // "T"+x2+","+y2);
         // "C"+(x1*(0.7+j*0.6))+","+(y1*(0.7+j*0.6))+","+((x1+x2)/2)+","+((y1+y2)/2),
         // "S"+x2+","+y2);
-      // console.log(parts);
     }
+    // console.log(parts);
+    // 0 "M-8.082052866092418,-129.74852762736725"
+    // 1 "A130,130,0,0,1,-2.3880612583373385e-14,-130"
+    // 2 "C-3.3065463576978534e-14,-180,-18.61676810834812,-189.07114467323012,-15.972435706244802,-189.29427044021878"
+    // 3 "S-19.767912721830974,-148.6917268264179,-32.946521203051624,-247.81954471069645"
+    // 4 "A250,250,0,0,0,-35.46434802931588,-247.4717762066122"
+    // 5 "C-21.278608817589525,-148.4830657239673,-13.328103304141486,-189.51739620720744,-15.972435706244802,-189.29427044021878"
+    // 6 "S-11.190534737666425,-179.65180748404697,-8.082052866092418,-129.74852762736725"
+    // 7 "Z"
     return parts.join("");
   }
 
@@ -195,16 +214,22 @@ d3.json("all.json", function(error, data) {
       // ribbons.classed("highlight", function(path) {
       //   return path[attr].index == d.index;
       // });
-      ribbons.style("fill-opacity", function(path) {
-        return (path[attr].index == index)? 0.8:0;
-      });
+      ribbons
+        .style("fill-opacity", function(path) {
+          return (path[attr].index == index)? 0.8:0;
+        })
+        .style("stroke-opacity", function(path) {
+          return (path[attr].index == index)? 0.8:0;
+        })
       tip.show(text);
     }
   }
   var mouseout = function(text) {
     if (!tip_fixed) {
       // ribbons.classed("highlight", false);
-      ribbons.style("fill-opacity", 0);
+      ribbons
+        .style("fill-opacity", 0)
+        .style("stroke-opacity", 0);
       tip.hide(text);
     }
   }
@@ -260,6 +285,19 @@ function distToOrigin(coord) { //relative to origin (0, 0)
 }
 function radianToOrigin(coord) { //relative to origin (0, 0)
   return Math.atan2(coord.y, coord.x); //Math.atan(coord.y/coord.x); //* 180 / Math.PI to convert to degree
+}
+function nudgeToOrigin(coord, unit, direction) { //relative to origin (0, 0)
+  var ratio = unit/distToOrigin(coord);
+  if (direction === "out") {
+    ratio *= -1;
+  }
+  return {
+    x: coord.x*(1-ratio),
+    y: coord.y*(1-ratio)
+  };
+}
+function isClockwise(a, b) { //relative to origin (0, 0)
+  return a.x*b.y + a.y*b.x < 0; //cross-product
 }
 function coordAverage(a, b) {
   return {

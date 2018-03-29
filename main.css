@@ -10,13 +10,6 @@ body {
   fill: #ccc;
   fill-opacity: 0.1;
 }
-.ribbons path.faded {
-  fill-opacity: 0.1;
-}
-.ribbons path.highlight {
-  fill: #333;
-  fill-opacity: 0.8;
-}
 
 body {
   font-family: 'Athiti', sans-serif;
