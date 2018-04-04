@@ -9,8 +9,8 @@ d3.json("all.json", function(error, data) {
 
   data.orgs.sort(function(a, b) { return a.type - b.type; });
 
-  var innerAttrs = ["area", "person", "relation", "result", "role", "strategy"];
-  var outerAttrs = ["areas", "people", "relations", "results", "roles", "strategies"];
+  var innerAttrs = ["area", "person", "result", "role", "strategy"];
+  var outerAttrs = ["areas", "people", "results", "roles", "strategies"];
   var outerLengths = outerAttrs.map(function(d) { return data[d].length; });
   var outerStartIdx = [];
   outerLengths.reduce(function(a, b, i) { return outerStartIdx[i] = a + b; }, 0);
@@ -176,9 +176,8 @@ d3.json("all.json", function(error, data) {
   var tip_fixed = false;
   var tip = d3.tip()
     .attr("class", "d3-tip")
-    .html(function(d) {
-      return d;
-    });
+    .offset([-10, 0])
+    .html(function(d) { return d; });
   svg.call(tip);
 
   var mouseover = function(index, text, attr) {
