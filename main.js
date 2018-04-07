@@ -213,18 +213,17 @@ d3.json("all.json", function(error, data) {
     }
   }
   var detailText = function() {
-    var text = "<ul>";
+    var text = "";
     innerAttrs.forEach(function(attr, attrIdx) {
-      text += "<li><h3>" + attr + ":</h3><br />";
+      text += "<h3>" + attr + ":</h3><ul>";
       data.orgs[idx_fixed][attr].forEach(function(i) {
         var found_value = data[outerAttrs[attrIdx]].find(function(d) { return d.id == i; });
         if (found_value) {
-          text += found_value.name + "<br />";
+          text += "<li>" + found_value.name + "</li>";
         }
       });
-      text += "</li>";
+      text += "</ul>";
     });
-    text += "</ul>";
     detail.html(text);
   }
   var mouseover = function(index, text, attr) {

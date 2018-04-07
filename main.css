@@ -22,13 +22,13 @@ body {
   margin: 20px 10px;
   width: 100%;
 }
-#detail ul {
-  padding: 0;
-  list-style: none;
-}
-#detail ul h3 {
+#detail h3 {
   margin-top: 15px;
   margin-bottom: 0px;
+}
+#detail ul {
+  padding-left: 20px;
+  list-style: square;
 }
 
 /* .group-tick line {
