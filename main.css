@@ -1,23 +1,41 @@
 body {
-  font: 10px sans-serif;
+  font-family: 'Athiti', sans-serif;
+  font-size: 10px;
+  line-height: 10px;
 }
-
-/* .group-tick line {
-  stroke: #000;
-} */
 
 .ribbons {
   fill: #ccc;
   fill-opacity: 0.1;
 }
 
-body {
-  font-family: 'Athiti', sans-serif;
-  font-size: 10px;
-  line-height: 10px;
+#ui {
+  background-color: rgba(80,80,80,0.1);
+  position: absolute;
+  top: 50px;
+  right: 50px;
+  padding: 30px;
+  width: 300px;
+  height: 100%;
+}
+#detail {
+  margin: 20px 10px;
+  width: 100%;
+}
+#detail ul {
+  padding: 0;
+  list-style: none;
+}
+#detail ul h3 {
+  margin-top: 15px;
+  margin-bottom: 0px;
 }
 
-/* div.tooltip {
+/* .group-tick line {
+  stroke: #000;
+}
+
+div.tooltip {
   position: absolute;
   top: 0;
   right: 0;

@@ -9,6 +9,23 @@ d3.json("all.json", function(error, data) {
 
   data.orgs.sort(function(a, b) { return a.type - b.type; });
 
+  // UI
+  var dropdown = $("#dropdown");
+  data.orgs.forEach(function(d, i) {
+    dropdown.append($("<option>").attr("value", i).text(d.thai_name));
+  });
+  dropdown.selectize({
+    create: false,
+    sortField: "text",
+    onChange: function(value) {
+      tip_fixed = true;
+      mouseover(value, "", "source");
+      mouseclick();
+    }
+  });
+  var dropdown_selectize = dropdown[0].selectize;
+  var detail = d3.select("#detail");
+
   var innerAttrs = ["area", "person", "result", "role", "strategy"];
   var outerAttrs = ["areas", "people", "results", "roles", "strategies"];
   var outerLengths = outerAttrs.map(function(d) { return data[d].length; });
@@ -79,6 +96,7 @@ d3.json("all.json", function(error, data) {
       .innerRadius(outerRadius - 10)
       .outerRadius(outerRadius);
 
+  d3.schemeSet3.splice(8, 1); //remove gray out
   var color = d3.scaleOrdinal(d3.schemeSet3);
 
   // group 1
@@ -91,7 +109,9 @@ d3.json("all.json", function(error, data) {
     .selectAll("path")
     .data(function(chord) { return chord })
     .enter().append("path")
-      .attr("d", path);
+      .attr("d", path)
+      .style("fill-opacity", 0.1)
+      .style("stroke-opacity", 0.1);
   var ribbons = g.append("g")
       .attr("class", "ribbons")
     .selectAll("path")
@@ -174,40 +194,93 @@ d3.json("all.json", function(error, data) {
 
   // tooltip
   var tip_fixed = false;
+  var idx_fixed = -1;
+  var source_fixed = false;
   var tip = d3.tip()
     .attr("class", "d3-tip")
     .offset([-10, 0])
     .html(function(d) { return d; });
   svg.call(tip);
 
+  var colorIdx = function(index, attr) {
+    switch(attr) {
+      case "source":
+        // console.log(chord1.groups[index].value);
+        return chord1.groups[index].value.type - 1;
+      case "target":
+      default:
+        return chord2.groups[index].value.typeIdx + data.types.length + 1;
+    }
+  }
+  var detailText = function() {
+    var text = "<ul>";
+    innerAttrs.forEach(function(attr, attrIdx) {
+      text += "<li><h3>" + attr + ":</h3><br />";
+      data.orgs[idx_fixed][attr].forEach(function(i) {
+        var found_value = data[outerAttrs[attrIdx]].find(function(d) { return d.id == i; });
+        if (found_value) {
+          text += found_value.name + "<br />";
+        }
+      });
+      text += "</li>";
+    });
+    text += "</ul>";
+    detail.html(text);
+  }
   var mouseover = function(index, text, attr) {
     if (!tip_fixed) {
+      background
+        .style("fill-opacity", 0.05)
+        .style("stroke-opacity", 0.05);
       ribbons
+        .style("fill", function(path) {
+          return color(colorIdx(path[attr].subindex, (attr == "source")? "target":"source"));
+        })
         .style("fill-opacity", function(path) {
           return (path[attr].index == index)? 0.8:0;
+        })
+        .style("stroke", function(path) {
+          return color(colorIdx(path[attr].subindex, (attr == "source")? "target":"source"));
         })
         .style("stroke-opacity", function(path) {
           return (path[attr].index == index)? 0.8:0;
         })
-      tip.show(text);
+      // tip.show(text);
     }
+    idx_fixed = index;
+    source_fixed = (attr == "source");
   }
-  var mouseout = function(text) {
+  var mouseout = function() {
     if (!tip_fixed) {
+      background
+        .style("fill-opacity", 0.1)
+        .style("stroke-opacity", 0.1);
       ribbons
         .style("fill-opacity", 0)
         .style("stroke-opacity", 0);
-      tip.hide(text);
+      // tip.hide();
     }
   }
-  svg.on("click", function(d) {
+  var mouseclick = function() {
+    mouseout();
+
+    if (tip_fixed && source_fixed) {
+      detailText();
+    }
+  }
+  svg.on("click", function() {
     tip_fixed = !tip_fixed;
-    mouseout(d);
+    mouseclick();
+
+    if (tip_fixed && source_fixed) {
+      dropdown_selectize.setValue(idx_fixed, true);
+    }
   });
-  svg.select("d3-tip").on("click", function(d) {
-    tip_fixed = !tip_fixed;
-    mouseout(d);
-  });
+  dropdown_selectize.setValue(0, false);
+  // svg.select("d3-tip").on("click", function() {
+  //   tip_fixed = !tip_fixed;
+  //   mouseout();
+  // });
 
   // group 1
   // var g = svg.append("g")
